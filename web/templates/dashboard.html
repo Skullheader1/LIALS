@@ -1,0 +1,235 @@
+<!DOCTYPE html>
+<html lang="de" data-bs-theme="dark">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Link Shortener - Create new link</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css" rel="stylesheet">
+    <style>
+        .toast-container {
+            position: fixed;
+            top: 20px;
+            right: 20px;
+            z-index: 1050;
+            pointer-events: auto;
+        }
+        .toast-container .alert {
+            min-width: 300px;
+            margin-bottom: 10px;
+            opacity: 1;
+            transition: opacity 0.5s ease-out;
+        }
+        .toast-container .alert.fade-out {
+            opacity: 0;
+        }
+    </style>
+</head>
+<body>
+    <!-- Toast Container -->
+    <div class="toast-container">
+        {% with messages = get_flashed_messages(with_categories=true) %}
+            {% if messages %}
+                {% for category, message in messages %}
+                    <div class="alert alert-{{ 'danger' if category == 'error' else category }} alert-dismissible fade show" role="alert">
+                        {{ message }}
+                        <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+                    </div>
+                {% endfor %}
+            {% endif %}
+        {% endwith %}
+    </div>
+
+    <!-- Navbar -->
+    <nav class="navbar navbar-expand-lg bg-body-tertiary border-bottom">
+        <div class="container">
+            <a class="navbar-brand d-flex align-items-center gap-2" href="{{url_for('dashboard')}}">
+                <i class="bi bi-link-45deg fs-4"></i>
+                <span class="fw-semibold">Link Shortener</span>
+            </a>
+            <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNav" aria-controls="navbarNav" aria-expanded="false" aria-label="Toggle navigation">
+                <span class="navbar-toggler-icon"></span>
+            </button>
+            <div class="collapse navbar-collapse" id="navbarNav">
+                <ul class="navbar-nav me-auto mb-2 mb-lg-0">
+                    <li class="nav-item">
+                        <a class="nav-link active" aria-current="page" href="{{url_for('dashboard')}}">
+                            <i class="bi bi-plus-circle me-1"></i> New link
+                        </a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link" href="{{url_for('my_links')}}">
+                            <i class="bi bi-link me-1"></i> My links
+                        </a>
+                    </li>
+                    {% if is_admin %}
+                        <li class="nav-item">
+                            <a class="nav-link" href="{{url_for('all_links')}}">
+                                <i class="bi bi-globe me-1"></i> All links
+                            </a>
+                        </li>
+                        <li class="nav-item">
+                            <a class="nav-link" href="{{url_for('manage_users')}}">
+                                <i class="bi bi-people me-1"></i> Users
+                            </a>
+                        </li>
+                    {% endif %}
+                </ul>
+                <div class="d-flex align-items-center gap-3">
+                    <span class="text-body-secondary d-none d-md-inline">
+                        <i class="bi bi-person-circle me-1"></i> {{ current_user.username }}
+                    </span>
+                    <a href="{{ url_for('logout') }}" class="btn btn-outline-danger btn-sm">
+                        <i class="bi bi-box-arrow-right me-1"></i> Logout
+                    </a>
+                </div>
+            </div>
+        </div>
+    </nav>
+
+    <!-- Main Content -->
+    <main class="py-4">
+        <div class="container">
+            <!-- Formular -->
+            <div class="row justify-content-center mb-4">
+                <div class="col-12 col-md-8 col-lg-6">
+                    <div class="card shadow-sm">
+                        <div class="card-header bg-primary bg-opacity-10 border-bottom-0">
+                            <h5 class="card-title mb-0 py-2">
+                                <i class="bi bi-plus-circle me-2"></i>Create new link
+                            </h5>
+                        </div>
+                        <div class="card-body p-4">
+                            <form method="POST" action="{{ url_for('dashboard') }}">
+                                <input type="hidden" name="form_type" value="create_link">
+                                <div class="mb-3">
+                                    <label for="original_url" class="form-label fw-medium">
+                                        <i class="bi bi-link-45deg me-1"></i> Original URL
+                                    </label>
+                                    <input type="url" class="form-control" id="original_url" name="original_url" placeholder="https://example.com/long-link" required>
+                                </div>
+
+                                <div class="row g-3 mb-3">
+                                    <div class="col-6">
+                                        <label for="max_usages" class="form-label fw-medium">
+                                            <i class="bi bi-cursor"></i> Max. Clicks
+                                        </label>
+                                        <input type="number" class="form-control" id="max_usages" name="max_usages" placeholder="0 = ∞">
+                                    </div>
+                                    <div class="col-6">
+                                        <label for="timeout" class="form-label fw-medium">
+                                            <i class="bi bi-clock me-1"></i> Days until expiration
+                                        </label>
+                                        <input type="number" class="form-control" id="timeout" name="timeout" placeholder="0 = ∞">
+                                    </div>
+                                </div>
+
+                                <div class="d-grid">
+                                    <button type="submit" class="btn btn-primary">
+                                        <i class="bi bi-scissors me-2"></i>Create link
+                                    </button>
+                                </div>
+                            </form>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </main>
+
+    {% if last_links %}
+    <div class="row justify-content-center">
+        <div class="col-12 col-lg-10">
+            <div class="card shadow-sm">
+                <div class="card-header bg-secondary bg-opacity-10 border-bottom-0">
+                    <h5 class="card-title mb-0 py-2">
+                        <i class="bi bi-clock-history me-2"></i>Recently created links
+                    </h5>
+                </div>
+                <div class="card-body p-0">
+                    <div class="table-responsive">
+                        <table class="table table-hover mb-0">
+                            <thead class="table-dark">
+                                <tr>
+                                    <th><i class="bi bi-clipboard me-1"></i> Short-URL</th>
+                                    <th><i class="bi bi-link-45deg me-1"></i> Original URL</th>
+                                    <th class="text-center"><i class="bi bi-bar-chart me-1"></i> Clicks</th>
+                                    <th class="text-center"><i class="bi bi-calendar me-1"></i> Created</th>
+                                    <th class="text-center"><i class="bi bi-hourglass me-1"></i> Expires</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {% for link in last_links %}
+                                <tr>
+                                    <td>
+                                        <div class="d-flex align-items-center gap-2">
+                                            <span>{{ link.short_link }}</span>
+                                            <button class="btn btn-outline-secondary btn-sm"
+                                                    onclick="copyToClipboard('{{ base_redirect_url + link.short_link }}', this)"
+                                                    title="Copy link">
+                                                <i class="bi bi-clipboard"></i>
+                                            </button>
+                                        </div>
+                                    </td>
+                                    <td class="text-truncate" style="max-width: 300px;" title="{{ link.original_url }}">
+                                        <a href="{{ link.redirect_url}}" target="_blank" class="text-primary text-decoration-none">
+                                            {{ link.redirect_url }}
+                                            <i class="bi bi-box-arrow-up-right ms-1 small"></i>
+                                        </a>
+                                    </td>
+                                    <td class="text-center">
+                                        <span class="badge bg-info">{{ link.clicks }}/{{ link.max_clicks if link.max_clicks > 0 else '∞' }}</span>
+                                    </td>
+                                    <td class="text-center text-body-secondary">
+                                        {{ datetime.fromtimestamp(link.created_at).strftime('%d.%m.%Y') }}
+                                    </td>
+                                    <td class="text-center">
+                                        {% if link.expires_at %}
+                                            <span class="badge bg-warning text-dark">{{ datetime.fromtimestamp(link.expires_at | int).strftime('%d.%m.%Y') }}</span>
+                                        {% else %}
+                                            <span class="badge bg-success">Never</span>
+                                        {% endif %}
+                                    </td>
+                                </tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        function copyToClipboard(text, button) {
+            navigator.clipboard.writeText(text).then(function() {
+                const icon = button.querySelector('i');
+                icon.classList.remove('bi-clipboard');
+                icon.classList.add('bi-clipboard-check');
+                button.classList.remove('btn-outline-secondary');
+                button.classList.add('btn-success');
+
+                setTimeout(function() {
+                    icon.classList.remove('bi-clipboard-check');
+                    icon.classList.add('bi-clipboard');
+                    button.classList.remove('btn-success');
+                    button.classList.add('btn-outline-secondary');
+                }, 2000);
+            });
+        }
+    </script>
+    {% endif %}
+
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
+    <script>
+        document.querySelectorAll('.toast-container .alert').forEach(function(alert) {
+            setTimeout(function() {
+                alert.classList.add('fade-out');
+                setTimeout(function() {
+                    alert.remove();
+                }, 500);
+            }, 5000);
+        });
+    </script>
+</body>
+</html>
