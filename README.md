@@ -21,7 +21,16 @@ database_uri = sqlite:///database.db
 
 For MySQL/PostgreSQL, use the corresponding SQLAlchemy URI.
 
-### 3. Run
+### 3. Configure host and port
+Edit `config.ini`:
+
+```ini
+[server]
+host = 0.0.0.0
+port = 5050
+```
+
+### 4. Run
 
 ```bash
 python3 main.py

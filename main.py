@@ -36,4 +36,7 @@ if __name__ == "__main__":
     logger.log(msg="Initialised", level=logging.INFO)
     logger.log(msg="Starting web server...", level=logging.INFO)
 
-    serve(app, host='0.0.0.0', port=5050, threads=4)
+    host = config.get('server', 'host', fallback='0.0.0.0')
+    port = config.getint('server', 'port', fallback=5050)
+
+    serve(app, host=host, port=port, threads=4)

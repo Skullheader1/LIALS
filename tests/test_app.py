@@ -416,6 +416,100 @@ class TestAuthRoutes:
         response = client.get("/logout", follow_redirects=True)
         assert b"You have been logged out" in response.data
 
+    def test_change_password_page_loads(self, client):
+        response = client.get("/change_password")
+        assert response.status_code == 200
+
+    def test_change_password_page_prefills_username(self, client):
+        response = client.get("/change_password?user_name=testuser")
+        assert b"testuser" in response.data
+
+    def test_login_redirects_change_password_with_username(self, test_app, client):
+        with test_app.app_context():
+            user = User(
+                id="force_change_user2",
+                username="forcechange2",
+                password_hash=hash_password("OldPass1!"),
+                is_admin=False,
+                is_active_field=True,
+                password_change_needed=True
+            )
+            db.session.add(user)
+            db.session.commit()
+
+        response = client.post("/login", data={
+            "username": "forcechange2",
+            "password": "OldPass1!"
+        }, follow_redirects=False)
+        assert "forcechange2" in response.headers["Location"]
+
+    def test_login_after_change_succeeds(self, test_app, client):
+        with test_app.app_context():
+            user = User(
+                id="force_change_user5",
+                username="forcechange5",
+                password_hash=hash_password("OldPass1!"),
+                is_admin=False,
+                is_active_field=True,
+                password_change_needed=True
+            )
+            db.session.add(user)
+            db.session.commit()
+
+        client.post("/change_password", data={
+            "user_name": "forcechange5",
+            "current_password": "OldPass1!",
+            "new_password": "NewPass1!",
+            "new_password_confirm": "NewPass1!"
+        }, follow_redirects=True)
+
+        response = login(client, "forcechange5", "NewPass1!")
+        assert b"Login successful" in response.data
+
+    def test_login_change_password_wrong_password_stays_on_login(self, test_app, client):
+        with test_app.app_context():
+            user = User(
+                id="force_change_user6",
+                username="forcechange6",
+                password_hash=hash_password("OldPass1!"),
+                is_admin=False,
+                is_active_field=True,
+                password_change_needed=True
+            )
+            db.session.add(user)
+            db.session.commit()
+
+        response = login(client, "forcechange6", "WrongPass1!")
+        assert b"Invalid username or password" in response.data
+
+    def test_login_redirects_change_password(self, test_app, client):
+        with test_app.app_context():
+            user = User(
+                id="force_change_user",
+                username="forcechange",
+                password_hash=hash_password("OldPass1!"),
+                is_admin=False,
+                is_active_field=True,
+                password_change_needed=True
+            )
+            db.session.add(user)
+            db.session.commit()
+
+        response = client.post("/login", data={
+            "username": "forcechange",
+            "password": "OldPass1!"
+        }, follow_redirects=False)
+        assert response.status_code == 302
+        assert "/change_password" in response.headers["Location"]
+        assert "forcechange" in response.headers["Location"]
+
+    def test_login_missing_username_and_password(self, client):
+        response = client.post("/login", data={
+            "username": "",
+            "password": ""
+        }, follow_redirects=True)
+        assert b"Please enter username and password" in response.data
+
 class TestLinkRoutes:
     def test_dashboard_requires_login(self, client):
         response = client.get("/dashboard", follow_redirects=False)
@@ -543,6 +637,40 @@ class TestLinkRoutes:
                                follow_redirects=True)
         assert b"Link deleted successfully" in response.data
 
+    def test_other_user_cannot_delete_link(self, test_app, client, sample_user, sample_link):
+        with test_app.app_context():
+            other_user = User(
+                id="other_user2",
+                username="other2",
+                password_hash=hash_password("Other1234!"),
+                is_admin=False,
+                is_active_field=True
+            )
+            db.session.add(other_user)
+            db.session.commit()
+
+        login(client, "other2", "Other1234!")
+        response = client.post(f"/delete_link/{sample_link}",
+                               headers={"Referer": "/my_links"},
+                               follow_redirects=True)
+        assert b"You do not have permission" in response.data
+
+    def test_other_user_cannot_toggle_link(self, test_app, client, sample_user, sample_link):
+        with test_app.app_context():
+            other_user = User(
+                id="other_user3",
+                username="other3",
+                password_hash=hash_password("Other1234!"),
+                is_admin=False,
+                is_active_field=True
+            )
+            db.session.add(other_user)
+            db.session.commit()
+
+        login(client, "other3", "Other1234!")
+        response = client.post(f"/toggle_link_active/{sample_link}", follow_redirects=True)
+        assert b"You do not have permission" in response.data
+
 class TestAdminRoutes:
     def test_all_links_requires_admin(self, client, sample_user):
         _, username, password = sample_user
@@ -617,6 +745,25 @@ class TestAdminRoutes:
         login(client, admin_name, admin_pass)
         response = client.get(f"/link_stats/{sample_link}")
         assert response.status_code == 200
+
+    def test_non_admin_cannot_delete_other_user(self, test_app, client, sample_user):
+        _, username, password = sample_user
+        with test_app.app_context():
+            other_user = User(
+                id="victim_user",
+                username="victim",
+                password_hash=hash_password("Victim1!"),
+                is_admin=False,
+                is_active_field=True
+            )
+            db.session.add(other_user)
+            db.session.commit()
+
+        login(client, username, password)
+        response = client.post("/delete_user/victim_user",
+                               headers={"Referer": "/manage_users"},
+                               follow_redirects=True)
+        assert b"You do not have permission" in response.data
 
 # Some error handling
 class TestErrorHandling:

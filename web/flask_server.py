@@ -423,7 +423,7 @@ def login():
 
         if user.password_change_needed:
             flash("Password change needed", "error")
-            return redirect(url_for("change_password"))
+            return redirect(url_for("change_password", user_name=user.username))
 
         login_user(user)
 
@@ -447,6 +447,10 @@ def change_password():
             return render_template("change_password.html")
 
         user = User.query.filter_by(username=username).first()
+
+        if not user:
+            flash("User not found", "error")
+            return render_template("change_password.html")
 
         if not verify_password(user.password_hash, current_password):
             flash("Current password is incorrect", "error")
@@ -473,8 +477,8 @@ def change_password():
         flash("Password changed successfully. Please log in.", "success")
         return redirect(url_for("login"))
 
-    user_id = request.args.get("user_id")
-    return render_template("change_password.html", user_id=user_id)
+    user_name = request.args.get("user_name", default="")
+    return render_template("change_password.html", user_name=user_name)
 
 @app.route("/register", methods=["GET", "POST"])
 def register():
