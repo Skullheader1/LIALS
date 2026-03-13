@@ -18,6 +18,7 @@ Edit `config.ini`:
 [database]
 database_uri = sqlite:///database.db
 ```
+or set the `DATABASE_URI` environment variable.
 
 For MySQL/PostgreSQL, use the corresponding SQLAlchemy URI.
 
@@ -29,7 +30,7 @@ Edit `config.ini`:
 host = 0.0.0.0
 port = 5050
 ```
-
+or set the `HOST` and `PORT` environment variables.
 ### 4. Run
 
 ```bash

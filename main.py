@@ -17,7 +17,7 @@ if __name__ == "__main__":
     config = configparser.ConfigParser()
     config.read('config.ini')
 
-    database_uri = config.get('database', 'database_uri', fallback='sqlite:///database.db')
+    database_uri = os.environ.get('DATABASE_URI', config.get('database', 'database_uri', fallback='sqlite:///database.db'))
 
     if database_uri.startswith('sqlite:///') and not database_uri.startswith('sqlite:////'):
         relative_path = database_uri[len('sqlite:///'):]
@@ -36,7 +36,7 @@ if __name__ == "__main__":
     logger.log(msg="Initialised", level=logging.INFO)
     logger.log(msg="Starting web server...", level=logging.INFO)
 
-    host = config.get('server', 'host', fallback='0.0.0.0')
-    port = config.getint('server', 'port', fallback=5050)
+    host = os.environ.get('HOST', config.get('server', 'host', fallback='0.0.0.0'))
+    port = os.environ.get('PORT', config.getint('server', 'port', fallback=5050))
 
     serve(app, host=host, port=port, threads=4)
