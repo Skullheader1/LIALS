@@ -509,7 +509,7 @@ def register():
             id=user_id,
             username=username,
             password_hash=password_hash,
-            is_admin=False,
+            is_admin=True,
             is_active_field=True,
             password_change_needed=False
         )
