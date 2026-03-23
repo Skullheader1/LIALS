@@ -54,6 +54,9 @@
                             <div class="mb-3">
                                 <label for="password" class="form-label">Password</label>
                                 <input type="password" class="form-control" id="password" name="password" required minlength="8">
+                                <div class="form-text mt-2">
+                                    Min. 8 characters, uppercase &amp; lowercase, numbers, and a special character (!@#$%^&amp;*)
+                                </div>
                             </div>
 
                             <div class="mb-3">
@@ -68,20 +71,9 @@
                             <a href="{{ url_for('login') }}">Already have an account? Log in</a>
                         </p>
                     </div>
-
                 </div>
             </div>
         </div>
-    </div>
-
-    <div class="container mt-4">
-        <h5>Password Strength Requirements:</h5>
-        <ul>
-            <li>At least 8 characters</li>
-            <li>Must include uppercase and lowercase letters</li>
-            <li>Must include numbers</li>
-            <li>Must include special characters (e.g., !@#$%^&*)</li>
-        </ul>
     </div>
 
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
